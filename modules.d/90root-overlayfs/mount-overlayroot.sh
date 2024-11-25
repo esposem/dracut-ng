@@ -17,7 +17,7 @@ create_luks_partition() {
     MakeDirectories=/work /upper" > /etc/repart.d/encr.conf
 
     # TODO: in rhel, it requires this patch: https://github.com/systemd/systemd/pull/29596/commits/afeb49a4eccac92e43b6359a5d4269ba85320185
-    systemd-repart --dry-run=no --no-pager --definitions=/etc/repart.d --tpm2-device=auto --tpm2-pcrs=7
+    systemd-repart --dry-run=no --no-pager --definitions=/etc/repart.d --tpm2-device=auto --tpm2-pcrs=11
 }
 
 attach_luks_partition() {
