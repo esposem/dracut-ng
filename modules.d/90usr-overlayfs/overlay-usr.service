@@ -1,0 +1,13 @@
+[Unit]
+Description=Make /usr rw
+After=initrd-fs.target
+DefaultDependencies=no
+AssertPathExists=/etc/initrd-release
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/setup-overlay-usr.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=initrd-fs.target
