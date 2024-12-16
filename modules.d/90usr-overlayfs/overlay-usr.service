@@ -1,6 +1,7 @@
 [Unit]
 Description=Make /usr rw
 After=initrd-fs.target
+After=usr.mount
 DefaultDependencies=no
 AssertPathExists=/etc/initrd-release
 

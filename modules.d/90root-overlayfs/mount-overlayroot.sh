@@ -10,14 +10,17 @@ DEVICE=/dev/vda4 # TODO:
 
 create_luks_partition() {
     mkdir /etc/repart.d
+    #linux-generic
     echo -n "[Partition]
     Type=linux-generic
     Format=ext4
-    Encrypt=tpm2
-    MakeDirectories=/work /upper" > /etc/repart.d/encr.conf
+    Encrypt=tpm2" > /etc/repart.d/encr.conf
+    # EncryptedVolume=:-:tpm2-device=auto,tpm2-pcrs=7"
 
     # TODO: in rhel, it requires this patch: https://github.com/systemd/systemd/pull/29596/commits/afeb49a4eccac92e43b6359a5d4269ba85320185
-    systemd-repart --dry-run=no --no-pager --definitions=/etc/repart.d --tpm2-device=auto --tpm2-pcrs=11
+    # systemd-repart --dry-run=no --no-pager --definitions=/etc/repart.d
+    systemd-repart --dry-run=no --no-pager --definitions=/etc/repart.d --tpm2-device=auto --tpm2-pcrs=7
+    #--generate-crypttab=/sysroot/etc/crypttab
 }
 
 attach_luks_partition() {
