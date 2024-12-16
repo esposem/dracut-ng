@@ -10,12 +10,14 @@ depends() {
 }
 
 install() {
+    inst_hook pre-mount 99 "$moddir/build-root.sh"
+
     inst_simple "$moddir/overlay-usr.service" "$systemdsystemunitdir/overlay-usr.service"
     inst_simple "$moddir/setup-overlay-usr.sh" "/usr/local/bin/setup-overlay-usr.sh"
 
     $SYSTEMCTL -q --root "$initdir" enable overlay-usr.service
 
-    inst_multiple -o mkfs.btrfs mkfs.ext4 mkfs.xfs lsblk sfdisk systemd-firstboot
+    inst_multiple -o mkfs.btrfs mkfs.ext4 mkfs.xfs lsblk jq
 }
 
 
