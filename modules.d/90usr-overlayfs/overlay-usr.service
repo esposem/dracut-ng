@@ -1,14 +1,15 @@
 [Unit]
 Description=Make /usr rw
-After=initrd-fs.target
-After=usr.mount
+# After=initrd-fs.target
+After=sysroot-usr.mount
+Before=dracut-mount.service
 DefaultDependencies=no
 AssertPathExists=/etc/initrd-release
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/setup-overlay-usr.sh
+ExecStart=/usr/local/bin/overlay-usr.sh
 RemainAfterExit=yes
 
 [Install]
-WantedBy=initrd-fs.target
+WantedBy=initrd.target

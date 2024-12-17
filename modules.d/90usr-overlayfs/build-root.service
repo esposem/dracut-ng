@@ -1,0 +1,15 @@
+[Unit]
+Description=Create missing root
+DefaultDependencies=no
+Before=systemd-veritysetup@usr.service
+After=dracut-pre-mount.service
+Wants=dracut-pre-mount.service
+AssertPathExists=/etc/initrd-release
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/build-root.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

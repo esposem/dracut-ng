@@ -1,0 +1,14 @@
+[Unit]
+Description=Populate root
+DefaultDependencies=no
+After=sysroot.mount
+Before=sysroot-usr.mount
+AssertPathExists=/etc/initrd-release
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/populate-root.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysroot-usr.mount
