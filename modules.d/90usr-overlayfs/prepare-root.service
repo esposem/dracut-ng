@@ -7,7 +7,7 @@ AssertPathExists=/etc/initrd-release
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/populate-root.sh
+ExecStart=/usr/local/bin/prepare-root.sh
 RemainAfterExit=yes
 
 [Install]

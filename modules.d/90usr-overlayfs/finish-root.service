@@ -1,5 +1,5 @@
 [Unit]
-Description=Make /usr rw
+Description=Populate /etc and overlay /usr
 # After=initrd-fs.target
 After=sysroot-usr.mount
 Before=dracut-mount.service
@@ -8,7 +8,7 @@ AssertPathExists=/etc/initrd-release
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/overlay-usr.sh
+ExecStart=/usr/local/bin/finish-root.sh
 RemainAfterExit=yes
 
 [Install]
