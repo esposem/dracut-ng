@@ -17,16 +17,15 @@ install() {
     $SYSTEMCTL -q --root "$initdir" enable build-root.service
 
 
-    inst_simple "$moddir/populate-root.service" "$systemdsystemunitdir/populate-root.service"
-    inst_simple "$moddir/populate-root.sh" "/usr/local/bin/populate-root.sh"
-    $SYSTEMCTL -q --root "$initdir" enable populate-root.service
+    inst_simple "$moddir/prepare-root.service" "$systemdsystemunitdir/prepare-root.service"
+    inst_simple "$moddir/prepare-root.sh" "/usr/local/bin/prepare-root.sh"
+    $SYSTEMCTL -q --root "$initdir" enable prepare-root.service
 
+    inst_simple "$moddir/finish-root.service" "$systemdsystemunitdir/finish-root.service"
+    inst_simple "$moddir/finish-root.sh" "/usr/local/bin/finish-root.sh"
+    $SYSTEMCTL -q --root "$initdir" enable finish-root.service
 
-    inst_simple "$moddir/overlay-usr.service" "$systemdsystemunitdir/overlay-usr.service"
-    inst_simple "$moddir/overlay-usr.sh" "/usr/local/bin/overlay-usr.sh"
-    $SYSTEMCTL -q --root "$initdir" enable overlay-usr.service
-
-    inst_multiple -o mkfs.btrfs mkfs.ext4 mkfs.xfs lsblk jq restorecon
+    inst_multiple -o mkfs.btrfs mkfs.ext4 mkfs.xfs lsblk jq
 }
 
 
