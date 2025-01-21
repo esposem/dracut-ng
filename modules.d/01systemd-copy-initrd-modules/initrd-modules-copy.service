@@ -1,0 +1,14 @@
+[Unit]
+Description=Copy initramfs kernel modules into the root fs
+After=initrd-fs.target
+DefaultDependencies=no
+AssertPathExists=/etc/initrd-release
+
+[Service]
+Type=oneshot
+ExecStart=mkdir -p /run/modules
+ExecStart=bash -c 'cp -a /usr/lib/modules/* /run/modules/'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=initrd-fs.target
