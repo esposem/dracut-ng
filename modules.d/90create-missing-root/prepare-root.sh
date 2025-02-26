@@ -15,8 +15,6 @@ cp -aZ $NEWROOT/usr/etc/* $NEWROOT/etc
 # get rid of root in /etc/fstab since it is referring to an old one
 sed -i '\|^[^#]\+\s\+/\s\+|d' $NEWROOT/etc/fstab
 
-echo "RM ROOT FSTAB" >> /run/output.txt
-
 mkdir -p /run/tmpfiles.d
 
 # overlay files

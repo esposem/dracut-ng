@@ -12,7 +12,8 @@ if ! getargbool 0 create_root.enable; then
 	exit 0
 fi
 
-create_root_encr=${ENCRYPT:-$(getarg create_root.encrypt)}
+create_root_encr_arg=$(getarg create_root.encrypt)
+create_root_encr=${create_root_encr_arg:-$ENCRYPT}
 if [[ -z "$create_root_encr" ]]; then
 	echo "Defaulting with create_root.encrypt=off"
     create_root_encr="off"
@@ -25,8 +26,8 @@ fi
 encrypt_option=$create_root_encr
 echo "Using create_root.encrypt=off"
 
-
-create_root_pcrs=${PCRS:-$(getarg create_root.pcrs)}
+create_root_pcrs_arg=$(getarg create_root.pcrs)
+create_root_pcrs=${create_root_pcrs_arg:-$PCRS}
 tpm2_pcrs=""
 if [[ "$create_root_pcrs" =~ ^[0-9]+(\+[0-9]+)*$ ]]; then
     echo "Using pcrs ${create_root_pcrs}"
@@ -40,8 +41,8 @@ if [[ "$encrypt_option" == "tpm2" ]]; then
 	systemd_repart_options="--tpm2-device=auto $tpm2_pcrs"
 fi
 
-
-create_root_fs=${FS:-$(getarg create_root.fs)}
+create_root_fs_arg=$(getarg create_root.fs)
+create_root_fs=${create_root_fs_arg:-$FS}
 VALID_FS=("ext4" "xfs" "btrfs")
 root_fs="ext4"
 if [[ " ${VALID_FS[@]} " =~ " ${create_root_fs} " ]]; then
@@ -52,7 +53,8 @@ elif ! [ -z "$create_root_sz" ]; then
 fi
 echo "Using create_root.fs=${root_fs}"
 
-create_root_sz=${MIN_SIZE:-$(getarg create_root.size)}
+create_root_sz_arg=$(getarg create_root.size)
+create_root_sz=${create_root_sz_arg:-$MIN_SIZE}
 root_min_size=""
 if [[ "$create_root_sz" =~ ^[0-9]+[KMGT]?$ ]]; then
 	root_min_size="SizeMinBytes=${create_root_sz}"
@@ -61,7 +63,6 @@ elif ! [ -z "$create_root_sz" ]; then
     echo "Allowed minimal size is SIZE[K,M,G,T]"
     echo "Not enforcing any minimal size"
 fi
-
 
 ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r --arg PARTUUID "$ROOT_GUID" '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == $PARTUUID)')
 
@@ -84,6 +85,7 @@ if [ -z "${USR:-}" ]; then
 	exit 0
 fi
 
+# enable prepare-root.service
 echo "" > /run/create_new_root
 
 mkdir -p /etc/repart.d
