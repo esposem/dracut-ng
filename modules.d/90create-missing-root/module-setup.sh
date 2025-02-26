@@ -23,12 +23,8 @@ install() {
     $SYSTEMCTL -q --root "$initdir" enable finish-root.service
 
     if [ -f "/etc/create-missing-root.conf" ]; then
-        echo "copying from user location"
-        cat /etc/create-missing-root.conf
         inst_simple "/etc/create-missing-root.conf" "/etc/create-missing-root.conf"
     else
-        echo "copying from default location"
-        cat ${moddir}/default-root.conf
         inst_simple "${moddir}/default-root.conf" "/etc/create-missing-root.conf"
     fi
 
