@@ -99,7 +99,7 @@ systemd-repart /dev/$DNAME --dry-run=no --no-pager --definitions=/etc/repart.d $
 
 udevadm settle
 
-ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r --arg PARTUUID "$ROOT_GUID" '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == $PARTUUID)')
+ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r --arg PARTUUID "$ROOT_GUID" '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == $PARTUUID) | .name')
 if [ -z "${ROOT:-}" ]; then
 	echo "Root not created! Aborting"
 	exit 1
