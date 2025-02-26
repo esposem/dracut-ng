@@ -1,9 +1,8 @@
 #!/bin/bash
 . /lib/dracut-lib.sh
 
-NEWROOT=${NEWROOT:-'/sysroot'}
-
 type getarg > /dev/null 2>&1 || . /lib/dracut-lib.sh
+NEWROOT=${NEWROOT:-'/sysroot'}
 
 echo "#### FINISH ROOT ####" >> /run/output.txt
 
