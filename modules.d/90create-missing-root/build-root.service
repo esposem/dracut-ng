@@ -10,7 +10,7 @@ AssertPathExists=/etc/initrd-release
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/build-root.sh
+ExecStart=/usr/bin/build-root.sh
 RemainAfterExit=yes
 
 [Install]

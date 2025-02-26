@@ -7,6 +7,8 @@ type getarg > /dev/null 2>&1 || . /lib/dracut-lib.sh
 
 NEWROOT=${NEWROOT:-'/sysroot'}
 
+ROOT_GUID="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"
+USR_GUID="8484680c-9521-48c6-9c11-b0720656f69e"
 
 if ! getargbool 0 create_root.enable; then
 	exit 0
@@ -47,7 +49,7 @@ fi
 
 
 create_root_fs=$(getarg create_root.fs)
-VALID_FS=("ext4" "xfs" "btrfs" "vfat")
+VALID_FS=("ext4" "xfs" "btrfs")
 root_fs="ext4"
 if [[ " ${VALID_FS[@]} " =~ " ${create_root_fs} " ]]; then
     root_fs=$create_root_fs
@@ -69,16 +71,21 @@ elif ! [ -z "$create_root_sz" ]; then
 fi
 
 
-ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == "4f68bce3-e8cd-4db1-96e7-fbcaf984b709")')
-# TODO: only one disk supported
-DNAME=$(lsblk -o NAME,TYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .name ')
+ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r --arg PARTUUID "$ROOT_GUID" '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == $PARTUUID)')
+
+DEVUUID=$(tr -cd '[:print:]' < /sys/firmware/efi/efivars/LoaderDevicePartUUID-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f)
+DEVUUID="${DEVUUID,,}"
+# Get the disk where the ESP is
+DNAME=$(lsblk -o NAME,UUID,PARTUUID --json | jq -r --arg UUID "$DEVUUID" '
+  .blockdevices[]? as $disk |
+  ($disk.children[]? | select(.partuuid == $UUID) | $disk.name)')
 
 if ! [ -z "${ROOT:-}" ]; then
 	echo "Root already exists! Nothing to do"
 	exit 0
 fi
 
-USR=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == "8484680c-9521-48c6-9c11-b0720656f69e") | .name')
+USR=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r --arg PARTUUID "$USR_GUID" '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == $PARTUUID) | .name')
 
 if [ -z "${USR:-}" ]; then
 	echo "/usr is not a separate partition! Nothing to do"
@@ -98,7 +105,7 @@ systemd-repart /dev/$DNAME --dry-run=no --no-pager --definitions=/etc/repart.d $
 
 udevadm settle
 
-ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == "4f68bce3-e8cd-4db1-96e7-fbcaf984b709") | .name')
+ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r --arg PARTUUID "$ROOT_GUID" '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == $PARTUUID)')
 if [ -z "${ROOT:-}" ]; then
 	echo "Root not created! Aborting"
 	exit 1
