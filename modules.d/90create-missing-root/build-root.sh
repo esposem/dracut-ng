@@ -24,7 +24,7 @@ if [[ "$create_root_encr" != "off" && "$create_root_encr" != "tpm2" ]]; then
 	exit 1
 fi
 encrypt_option=$create_root_encr
-echo "Using create_root.encrypt=off"
+echo "Using create_root.encrypt=${create_root_encr}"
 
 create_root_pcrs_arg=$(getarg create_root.pcrs)
 create_root_pcrs=${create_root_pcrs_arg:-$PCRS}
