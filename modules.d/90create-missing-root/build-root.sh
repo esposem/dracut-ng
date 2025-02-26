@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #TODO: this works only on amd64/x86_64
-#IDEA: provide the config file in initramfs
+#TODO: provide the config file in initramfs?
 
 type getarg > /dev/null 2>&1 || . /lib/dracut-lib.sh
 
@@ -9,7 +9,6 @@ NEWROOT=${NEWROOT:-'/sysroot'}
 
 
 if ! getargbool 0 create_root.enable; then
-	echo "DISABLED" > /run/output.txt
 	exit 0
 fi
 
@@ -71,15 +70,11 @@ fi
 
 
 ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == "4f68bce3-e8cd-4db1-96e7-fbcaf984b709")')
-echo "ROOT $ROOT" >> /run/output.txt
-
 # TODO: only one disk supported
 DNAME=$(lsblk -o NAME,TYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .name ')
-echo "DNAME $DNAME" >> /run/output.txt
 
 if ! [ -z "${ROOT:-}" ]; then
 	echo "Root already exists! Nothing to do"
-	echo "ROOT EXISTS" >> /run/output.txt
 	exit 0
 fi
 
@@ -87,11 +82,8 @@ USR=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type
 
 if [ -z "${USR:-}" ]; then
 	echo "/usr is not a separate partition! Nothing to do"
-	echo "USR NOT PARTITION" >> /run/output.txt
 	exit 0
 fi
-
-echo "NO ROOT" >> /run/output.txt
 
 echo "" > /run/create_new_root
 
@@ -106,21 +98,12 @@ systemd-repart /dev/$DNAME --dry-run=no --no-pager --definitions=/etc/repart.d $
 
 udevadm settle
 
-echo "REPART DONE" >> /run/output.txt
-
 ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == "4f68bce3-e8cd-4db1-96e7-fbcaf984b709") | .name')
-
-echo "NEW ROOT $ROOT" >> /run/output.txt
-
 if [ -z "${ROOT:-}" ]; then
 	echo "Root not created! Aborting"
-	echo "ROOT CREATE FAIL" >> /run/output.txt
 	exit 1
 fi
 
-# After systemd-cryptsetup@root.service
-# After build-root
-# Before prepare-root
 # TODO: should this be another unit?
 root_dev="/dev/${ROOT}"
 if [[ "$encrypt_option" == "tpm2" ]]; then
@@ -140,11 +123,8 @@ chmod 555 $NEWROOT/proc
 chmod 755 $NEWROOT/dev
 chmod 555 $NEWROOT/sys
 
-echo "BASIC FOLDER MOUNTED" >> /run/output.txt
-
 verity_enabled=$(getarg usrhash)
 if [ -z "${verity_enabled:-}" ]; then
-	echo "/USR MOUNTED" >> /run/output.txt
 	mount /dev/$USR $NEWROOT/usr
 fi
 

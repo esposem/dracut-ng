@@ -4,8 +4,6 @@ type getarg > /dev/null 2>&1 || . /lib/dracut-lib.sh
 
 NEWROOT=${NEWROOT:-'/sysroot'}
 
-echo "#### PREPARE ROOT ####" >> /run/output.txt
-
 if ! [ -e "/run/create_new_root" ]; then
 	exit 0
 fi
@@ -14,13 +12,10 @@ mkdir -p $NEWROOT/etc
 # TODO: copy or overlay?
 cp -aZ $NEWROOT/usr/etc/* $NEWROOT/etc
 
-echo "CP /usr/etc into /etc" >> /run/output.txt
-
 # get rid of root in /etc/fstab since it is referring to an old one
 sed -i '\|^[^#]\+\s\+/\s\+|d' $NEWROOT/etc/fstab
 
 echo "RM ROOT FSTAB" >> /run/output.txt
-cat  $NEWROOT/etc/fstab >> /run/output.txt
 
 mkdir -p /run/tmpfiles.d
 
@@ -49,12 +44,4 @@ ln -s usr/sbin sbin
 ln -s usr/bin bin
 cd -
 
-# ls -Z $NEWROOT >> /run/output.txt
-
-# chroot "$NEWROOT" /sbin/restorecon -R /
-# setfiles -r $NEWROOT -p $NEWROOT/etc/selinux/targeted/contexts/files/file_contexts $NEWROOT
-
-# ls -Z $NEWROOT >> /run/output.txt
-
-# echo -n "-F " > $NEWROOT/.autorelabel
-echo "PREPARE: DONE" >> /run/output.txt
+# TODO: selinux missing!

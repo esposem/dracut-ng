@@ -4,8 +4,6 @@
 type getarg > /dev/null 2>&1 || . /lib/dracut-lib.sh
 NEWROOT=${NEWROOT:-'/sysroot'}
 
-echo "#### FINISH ROOT ####" >> /run/output.txt
-
 if getargbool 0 create_root.overlay; then
 	mount -o remount,rw $NEWROOT
 	mkdir -p /run/usr
