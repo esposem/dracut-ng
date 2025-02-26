@@ -1,36 +1,153 @@
 #!/bin/bash
 
+#TODO: this works only on amd64/x86_64
+#IDEA: provide the config file in initramfs
+
+type getarg > /dev/null 2>&1 || . /lib/dracut-lib.sh
+
 NEWROOT=${NEWROOT:-'/sysroot'}
 
-ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == "4f68bce3-e8cd-4db1-96e7-fbcaf984b709")')
-echo "ROOT $ROOT" > /output.txt
 
-DNAME=$(lsblk -o NAME,TYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .name ')
-echo "DNAME $DNAME" >> /output.txt
-
-if ! [ -z "${ROOT:-}" ]; then
-	echo "ROOT EXISTS" >> /output.txt
-	# mount /dev/$UNAME $NEWROOT/usr
+if ! getargbool 0 create_root.enable; then
+	echo "DISABLED" > /run/output.txt
 	exit 0
 fi
 
-echo "NO ROOT" >> /output.txt
 
-echo "" > /new_root
+create_root_encr=$(getarg create_root.encrypt)
+if [[ -z "$create_root_encr" ]]; then
+	echo "Defaulting with create_root.encrypt=off"
+    create_root_encr="off"
+fi
+# Only valid values are off and tpm2
+if [[ "$create_root_encr" != "off" && "$create_root_encr" != "tpm2" ]]; then
+	echo "Encrypt allowed options are create_root.encrypt={off/tpm2}"
+	exit 1
+fi
+encrypt_option=$create_root_encr
+echo "Using create_root.encrypt=off"
 
-mkdir /etc/repart.d
+
+create_root_pcrs=$(getarg create_root.pcrs)
+if [[ -z "$create_root_pcrs" ]]; then
+    create_root_pcrs="7"
+fi
+
+tpm2_pcrs=""
+if [[ "$create_root_pcrs" =~ ^[0-9]+(\+[0-9]+)*$ ]]; then
+    echo "Using pcrs ${create_root_pcrs}"
+    tpm2_pcrs="--tpm2-pcrs=${create_root_pcrs}"
+elif ! [ -z "$create_root_pcrs" ]; then
+    echo "PCR allowed format: PCR[+PCR]"
+	echo "Not using pcrs."
+fi
+systemd_repart_options=""
+if [[ "$encrypt_option" == "tpm2" ]]; then
+	systemd_repart_options="--tpm2-device=auto $tpm2_pcrs"
+fi
+
+
+create_root_fs=$(getarg create_root.fs)
+VALID_FS=("ext4" "xfs" "btrfs" "vfat")
+root_fs="ext4"
+if [[ " ${VALID_FS[@]} " =~ " ${create_root_fs} " ]]; then
+    root_fs=$create_root_fs
+elif ! [ -z "$create_root_sz" ]; then
+    echo "Allowed filesystems are ${VALID_FS[@]}"
+	echo "Using default fs ext4"
+fi
+echo "Using create_root.fs=${root_fs}"
+
+
+create_root_sz=$(getarg create_root.size)
+root_min_size=""
+if [[ "$create_root_sz" =~ ^[0-9]+[KMGT]?$ ]]; then
+	root_min_size="SizeMinBytes=${create_root_sz}"
+    echo "Using ${root_min_size}"
+elif ! [ -z "$create_root_sz" ]; then
+    echo "Allowed minimal size is SIZE[K,M,G,T]"
+    echo "Not enforcing any minimal size"
+fi
+
+
+ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == "4f68bce3-e8cd-4db1-96e7-fbcaf984b709")')
+echo "ROOT $ROOT" >> /run/output.txt
+
+# TODO: only one disk supported
+DNAME=$(lsblk -o NAME,TYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .name ')
+echo "DNAME $DNAME" >> /run/output.txt
+
+if ! [ -z "${ROOT:-}" ]; then
+	echo "Root already exists! Nothing to do"
+	echo "ROOT EXISTS" >> /run/output.txt
+	exit 0
+fi
+
+USR=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == "8484680c-9521-48c6-9c11-b0720656f69e") | .name')
+
+if [ -z "${USR:-}" ]; then
+	echo "/usr is not a separate partition! Nothing to do"
+	echo "USR NOT PARTITION" >> /run/output.txt
+	exit 0
+fi
+
+echo "NO ROOT" >> /run/output.txt
+
+echo "" > /run/create_new_root
+
+mkdir -p /etc/repart.d
 echo -n "[Partition]
 Type=root
-Format=ext4
-Encrypt=tpm2" > /etc/repart.d/encr.conf
+Format=${root_fs}
+Encrypt=${encrypt_option}
+${root_min_size}" > /etc/repart.d/encr.conf
 
-# REPART_OUT=$(systemd-repart /dev/$DNAME --dry-run=no --no-pager --definitions=etc/repart.d --tpm2-device=auto --tpm2-pcrs=7 --json pretty | jq -r '.[] | select(.type == "root-x86-64") | .activity')
-systemd-repart /dev/$DNAME --dry-run=no --no-pager --definitions=/etc/repart.d --tpm2-device=auto --tpm2-pcrs=7 # --factory-reset=yes
+systemd-repart /dev/$DNAME --dry-run=no --no-pager --definitions=/etc/repart.d $systemd_repart_options
 
-# TODO: this is only for writable /usr
-# mount /dev/mapper/root $NEWROOT
-######
+udevadm settle
 
-# TODO: this is only for writable /usr
-# mount /dev/$UNAME $NEWROOT/usr
-######
+echo "REPART DONE" >> /run/output.txt
+
+ROOT=$(lsblk -o NAME,TYPE,PARTTYPE --json | jq -r '.blockdevices[] | select(.type == "disk") | .children[] | select(.parttype == "4f68bce3-e8cd-4db1-96e7-fbcaf984b709") | .name')
+
+echo "NEW ROOT $ROOT" >> /run/output.txt
+
+if [ -z "${ROOT:-}" ]; then
+	echo "Root not created! Aborting"
+	echo "ROOT CREATE FAIL" >> /run/output.txt
+	exit 1
+fi
+
+# After systemd-cryptsetup@root.service
+# After build-root
+# Before prepare-root
+# TODO: should this be another unit?
+root_dev="/dev/${ROOT}"
+if [[ "$encrypt_option" == "tpm2" ]]; then
+    /usr/lib/systemd/systemd-cryptsetup attach root /dev/gpt-auto-root-luks tpm2-measure-pcr=yes
+    root_dev="/dev/mapper/root"
+fi
+mount $root_dev $NEWROOT
+
+rm -rf $NEWROOT/lost+found
+
+mkdir $NEWROOT/usr
+chmod 755 $NEWROOT/usr
+
+# This is to make dracut-mount happy
+mkdir $NEWROOT/proc
+chmod 555 $NEWROOT/proc
+mkdir $NEWROOT/dev
+chmod 755 $NEWROOT/dev
+mkdir $NEWROOT/sys
+chmod 555 $NEWROOT/sys
+
+echo "BASIC FOLDER MOUNTED" >> /run/output.txt
+
+verity_enabled=$(getarg usrhash)
+if [ -z "${verity_enabled:-}" ]; then
+	echo "/USR MOUNTED" >> /run/output.txt
+	mount /dev/$USR $NEWROOT/usr
+fi
+
+# keep all mounted

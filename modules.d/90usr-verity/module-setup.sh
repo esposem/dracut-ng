@@ -10,12 +10,9 @@ depends() {
 }
 
 install() {
-    # inst_hook pre-mount 99 "$moddir/build-root.sh"
-
     inst_simple "$moddir/build-root.service" "$systemdsystemunitdir/build-root.service"
     inst_simple "$moddir/build-root.sh" "/usr/local/bin/build-root.sh"
     $SYSTEMCTL -q --root "$initdir" enable build-root.service
-
 
     inst_simple "$moddir/prepare-root.service" "$systemdsystemunitdir/prepare-root.service"
     inst_simple "$moddir/prepare-root.sh" "/usr/local/bin/prepare-root.sh"
@@ -25,7 +22,7 @@ install() {
     inst_simple "$moddir/finish-root.sh" "/usr/local/bin/finish-root.sh"
     $SYSTEMCTL -q --root "$initdir" enable finish-root.service
 
-    inst_multiple -o mkfs.btrfs mkfs.ext4 mkfs.xfs lsblk jq
+    inst_multiple -o mkfs.btrfs mkfs.ext4 mkfs.xfs mkfs.vfat lsblk jq chroot
 }
 
 

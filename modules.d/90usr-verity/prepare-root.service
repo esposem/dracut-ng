@@ -1,8 +1,13 @@
 [Unit]
 Description=Populate root
 DefaultDependencies=no
-After=sysroot.mount
-Before=sysroot-usr.mount
+Requires=build-root.service
+After=build-root.service
+# Necessary otherwise the other units see /etc empty
+Before=dracut-pre-pivot.service
+RequiresMountsFor=/sysroot/usr
+ConditionPathExists=/run/create_new_root
+ConditionKernelCommandLine=create_root.enable
 AssertPathExists=/etc/initrd-release
 
 [Service]
@@ -11,4 +16,4 @@ ExecStart=/usr/local/bin/prepare-root.sh
 RemainAfterExit=yes
 
 [Install]
-WantedBy=sysroot-usr.mount
+WantedBy=sysinit.target
