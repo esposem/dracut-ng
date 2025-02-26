@@ -1,21 +1,18 @@
 #!/bin/bash
 
-#TODO: this works only on amd64/x86_64
-#TODO: provide the config file in initramfs?
-
 type getarg > /dev/null 2>&1 || . /lib/dracut-lib.sh
+. /etc/create-missing-root.conf
 
 NEWROOT=${NEWROOT:-'/sysroot'}
 
-ROOT_GUID="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"
-USR_GUID="8484680c-9521-48c6-9c11-b0720656f69e"
+ROOT_GUID=${ROOT_GUID:-'4f68bce3-e8cd-4db1-96e7-fbcaf984b709'}
+USR_GUID=${USR_GUID:-'8484680c-9521-48c6-9c11-b0720656f69e'}
 
 if ! getargbool 0 create_root.enable; then
 	exit 0
 fi
 
-
-create_root_encr=$(getarg create_root.encrypt)
+create_root_encr=${ENCRYPT:-$(getarg create_root.encrypt)}
 if [[ -z "$create_root_encr" ]]; then
 	echo "Defaulting with create_root.encrypt=off"
     create_root_encr="off"
@@ -29,18 +26,14 @@ encrypt_option=$create_root_encr
 echo "Using create_root.encrypt=off"
 
 
-create_root_pcrs=$(getarg create_root.pcrs)
-if [[ -z "$create_root_pcrs" ]]; then
-    create_root_pcrs="7"
-fi
-
+create_root_pcrs=${PCRS:-$(getarg create_root.pcrs)}
 tpm2_pcrs=""
 if [[ "$create_root_pcrs" =~ ^[0-9]+(\+[0-9]+)*$ ]]; then
     echo "Using pcrs ${create_root_pcrs}"
     tpm2_pcrs="--tpm2-pcrs=${create_root_pcrs}"
 elif ! [ -z "$create_root_pcrs" ]; then
     echo "PCR allowed format: PCR[+PCR]"
-	echo "Not using pcrs."
+    echo "Not using pcrs."
 fi
 systemd_repart_options=""
 if [[ "$encrypt_option" == "tpm2" ]]; then
@@ -48,7 +41,7 @@ if [[ "$encrypt_option" == "tpm2" ]]; then
 fi
 
 
-create_root_fs=$(getarg create_root.fs)
+create_root_fs=${FS:-$(getarg create_root.fs)}
 VALID_FS=("ext4" "xfs" "btrfs")
 root_fs="ext4"
 if [[ " ${VALID_FS[@]} " =~ " ${create_root_fs} " ]]; then
@@ -59,8 +52,7 @@ elif ! [ -z "$create_root_sz" ]; then
 fi
 echo "Using create_root.fs=${root_fs}"
 
-
-create_root_sz=$(getarg create_root.size)
+create_root_sz=${MIN_SIZE:-$(getarg create_root.size)}
 root_min_size=""
 if [[ "$create_root_sz" =~ ^[0-9]+[KMGT]?$ ]]; then
 	root_min_size="SizeMinBytes=${create_root_sz}"
