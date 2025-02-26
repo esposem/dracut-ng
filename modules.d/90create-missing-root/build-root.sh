@@ -135,11 +135,9 @@ mkdir $NEWROOT/usr
 chmod 755 $NEWROOT/usr
 
 # This is to make dracut-mount happy
-mkdir $NEWROOT/proc
+mkdir $NEWROOT/proc $NEWROOT/dev $NEWROOT/sys
 chmod 555 $NEWROOT/proc
-mkdir $NEWROOT/dev
 chmod 755 $NEWROOT/dev
-mkdir $NEWROOT/sys
 chmod 555 $NEWROOT/sys
 
 echo "BASIC FOLDER MOUNTED" >> /run/output.txt
@@ -150,4 +148,4 @@ if [ -z "${verity_enabled:-}" ]; then
 	mount /dev/$USR $NEWROOT/usr
 fi
 
-# keep all mounted
+# keep /sysroot and /usr mounted

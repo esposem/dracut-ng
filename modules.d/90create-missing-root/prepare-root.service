@@ -3,6 +3,7 @@ Description=Populate root
 DefaultDependencies=no
 Requires=build-root.service
 After=build-root.service
+After=systemd-veritysetup@usr.service
 # Necessary otherwise the other units see /etc empty
 Before=dracut-pre-pivot.service
 RequiresMountsFor=/sysroot/usr
